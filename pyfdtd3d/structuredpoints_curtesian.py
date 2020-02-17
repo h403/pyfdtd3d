@@ -1,7 +1,6 @@
-from constants import EP0, MU0
-import structuredpoints
-from base import TimeSeries
-from structuredpoints import Grid
+from pyfdtd3d.constants import EP0, MU0
+from pyfdtd3d.base import TimeSeries
+from pyfdtd3d.structuredpoints import Grid
 import numpy as np
 import gc
 

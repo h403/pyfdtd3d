@@ -1,4 +1,4 @@
-from structuredpoints_curtesian import *
+from pyfdtd3d.structuredpoints_curtesian import *
 import cupy as cp
 
 class FieldCP(Field):

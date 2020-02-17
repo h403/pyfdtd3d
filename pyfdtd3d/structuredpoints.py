@@ -1,15 +1,15 @@
-import base
+import pyfdtd3d.base
 
-class Grid(base.Grid):
+class Grid(pyfdtd3d.base.Grid):
     def __init__(self):
-        base.Grid.__init__(self)
+        pyfdtd3d.base.Grid.__init__(self)
         self._dimensions = None, None, None
         self._spacing = None, None, None
         self._origin = None, None, None
         self.events = {
-            'set_dimensions': base.EventHandler(),
-            'set_spacing': base.EventHandler(),
-            'set_origin': base.EventHandler(),
+            'set_dimensions': pyfdtd3d.base.EventHandler(),
+            'set_spacing': pyfdtd3d.base.EventHandler(),
+            'set_origin': pyfdtd3d.base.EventHandler(),
         }
     def _set_dimensions(self, v): # v: i, j, k
         self._dimensions = v
