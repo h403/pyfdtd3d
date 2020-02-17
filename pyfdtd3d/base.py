@@ -1,30 +1,35 @@
 import numpy as np
 
-class EventHandler(object):
-    def __init__(self):
-        self._hook = []
-    def hook(self, func):
-        self._hook.append(func)
-    def dispatch(self):
-        for func in self._hook:
-            func()
-
 class Grid(object):
-    def __init__(self):
-        self.events = {}
+    pass
 
+class Calculator(object):
+    def calculate(self):
+        pass
+
+class Probe(object):
+    def get(self):
+        pass
+    
 class TimeSeries(object):
-    def __init__(self):
-        self.current_time = 0.
-        self.dt = 1 # [ns]
-    def progress_half_step(self):
-        self.current_time += .5 * self.dt
+    dt = property(lambda self: self._dt)
+    ratio = property(lambda self: self._ratio)
+    current_time = property(lambda self: self._current_time)
+    def __init__(self, dt, ratio=.5):
+        self._current_time = 0.
+        self._dt = dt # [ns]
+        self._ratio = ratio
+    def progress(self):
+        self._current_time += self.ratio * self.dt
 
-def sin3(time,freq): # time: TimeSeries, freq: float
+def sin3(current_time,freq): # time: float, freq: float
     omg0 = 2 * np.pi * freq # 正弦波源の各周波数
     tau0 = .5 / freq        # パルス持続半周期
-    if time.current_time > 2. * tau0:
+    if current_time > 2. * tau0:
         v = 0.
     else:
-        v = np.sin(omg0 * time.current_time) ** 3
+        v = np.sin(omg0 * current_time) ** 3
     return v
+
+def vsrc(voltage, current, delta, resister=50):
+    return - (voltage - resister * current) / delta
