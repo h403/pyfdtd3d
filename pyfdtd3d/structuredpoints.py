@@ -116,35 +116,32 @@ class ECalc(pyfdtd3d.base.Calculator):
 
 
 class CurrentX(pyfdtd3d.base.Probe):
-    def __init__(self, yee, pos):
+    def __init__(self, yee):
         pyfdtd3d.base.Probe.__init__(self)
         self._yee = yee
-        self._pos = pos
-    def get(self):
+    def get(self, pos):
         hx, hy, hz = self._yee.h
         dx, dy, dz = self._yee.grid.spacing
-        i, j, k = self._pos
+        i, j, k = pos
         return (hz[i,j,k] - hz[i  ,j-1,k  ]) * dz + (hy[i  ,j  ,k-1] - hy[i,j,k]) * dy
 
 class CurrentY(pyfdtd3d.base.Probe):
-    def __init__(self, yee, pos):
+    def __init__(self, yee):
         pyfdtd3d.base.Probe.__init__(self)
         self._yee = yee
-        self._pos = pos
-    def get(self):
+    def __getitem__(self, pos):
         hx, hy, hz = self._yee.h
         dx, dy, dz = self._yee.grid.spacing
-        i, j, k = self._pos
+        i, j, k = pos
         return (hx[i,j,k] - hx[i  ,j  ,k-1]) * dx + (hz[i-1,j  ,k  ] - hz[i,j,k]) * dz
 
 class CurrentZ(pyfdtd3d.base.Probe):
-    def __init__(self, yee, pos):
+    def __init__(self, yee):
         pyfdtd3d.base.Probe.__init__(self)
         self._yee = yee
-        self._pos = pos
-    def get(self):
+    def __getitem__(self, pos):
         hx, hy, hz = self._yee.h
         dx, dy, dz = self._yee.grid.spacing
-        i, j, k = self._pos
+        i, j, k = pos
         return (hy[i,j,k] - hy[i-1,j  ,k  ]) * dy + (hx[i  ,j-1,k  ] - hx[i,j,k]) * dx
-
+        
