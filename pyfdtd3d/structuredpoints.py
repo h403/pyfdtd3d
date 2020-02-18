@@ -43,10 +43,9 @@ class HCalc(pyfdtd3d.base.Calculator):
     def __init__(self, yee, time):
         pyfdtd3d.base.Calculator.__init__(self)
         self._yee = y = yee
-        dx, dy, dz = y.grid.spacing
-        self._const = time.dt / MU0 / np.array((dx, dy, dz))
-        self.time = time
-    def calculate_(self):
+        self.time = t = time
+        self._const = t.dt / MU0 / np.array(y.grid.spacing)
+    def calculate(self):
         ex, ey, ez = self._yee.e
         hx, hy, hz = self._yee.h
         cx, cy, cz = self._const
@@ -56,17 +55,6 @@ class HCalc(pyfdtd3d.base.Calculator):
                             - cx * (ez[1:  , :  , :  ] - ez[ :-1, :  , :  ])
         hz[ :  , :  , :  ] -= cx * (ey[1:  , :  , :  ] - ey[ :-1, :  , :  ])\
                             - cy * (ex[ :  ,1:  , :  ] - ex[ :  , :-1, :  ])       
-    def calculate(self):
-        ex, ey, ez = self._yee.e
-        hx, hy, hz = self._yee.h
-        dx, dy, dz = self._yee.grid.spacing
-        dt = self.time.dt
-        hx[ :  , :  , :  ] -= dt / MU0 / dy * (ez[ :  ,1:  , :  ] - ez[ :  , :-1, :  ])\
-                            - dt / MU0 / dz * (ey[ :  , :  ,1:  ] - ey[ :  , :  , :-1])
-        hy[ :  , :  , :  ] -= dt / MU0 / dz * (ex[ :  , :  ,1:  ] - ex[ :  , :  , :-1])\
-                            - dt / MU0 / dx * (ez[1:  , :  , :  ] - ez[ :-1, :  , :  ])
-        hz[ :  , :  , :  ] -= dt / MU0 / dx * (ey[1:  , :  , :  ] - ey[ :-1, :  , :  ])\
-                            - dt / MU0 / dy * (ex[ :  ,1:  , :  ] - ex[ :  , :-1, :  ])       
 
 class ECalc(pyfdtd3d.base.Calculator):
     def __init__(self, yee, time, material):
@@ -86,12 +74,11 @@ class ECalc(pyfdtd3d.base.Calculator):
                er[ :-1,1:  , :  ] +
                er[1:  , :-1, :  ] +
                er[1:  ,1:  , :  ]) / 4.
+        self._er = erx, ery, erz
         e = np.array((erx, erx, ery, ery, erz, erz))
         d = np.array((dy, dz, dz, dx, dx, dy))
         self._const = time.dt / EP0 / e / d # cxy, cxz, cyz, cyx, czx, czy
-        self.time = time
-        self._er = erx, ery, erz
-    def calculate_(self):
+    def calculate(self):
         ex, ey, ez = self._yee.e
         hx, hy, hz = self._yee.h
         cxy, cxz, cyz, cyx, czx, czy = self._const
@@ -101,19 +88,6 @@ class ECalc(pyfdtd3d.base.Calculator):
                             - cyx * (hz[1:  , :  ,1:-1] - hz[ :-1, :  ,1:-1])
         ez[1:-1,1:-1, :  ] += czx * (hy[1:  ,1:-1, :  ] - hy[ :-1,1:-1, :  ])\
                             - czy * (hx[1:-1,1:  , :  ] - hx[1:-1, :-1, :  ])
-    def calculate(self):
-        ex, ey, ez = self._yee.e
-        hx, hy, hz = self._yee.h
-        dx, dy, dz = self._yee.grid.spacing
-        dt = self.time.dt
-        erx, ery, erz = self._er
-        ex[ :  ,1:-1,1:-1] += dt / EP0 / erx / dy * (hz[ :  ,1:  ,1:-1] - hz[ :  , :-1,1:-1])\
-                            - dt / EP0 / erx / dz * (hy[ :  ,1:-1,1:  ] - hy[ :  ,1:-1, :-1])
-        ey[1:-1, :  ,1:-1] += dt / EP0 / ery / dz * (hx[1:-1, :  ,1:  ] - hx[1:-1, :  , :-1])\
-                            - dt / EP0 / ery / dx * (hz[1:  , :  ,1:-1] - hz[ :-1, :  ,1:-1])
-        ez[1:-1,1:-1, :  ] += dt / EP0 / erz / dx * (hy[1:  ,1:-1, :  ] - hy[ :-1,1:-1, :  ])\
-                            - dt / EP0 / erz / dy * (hx[1:-1,1:  , :  ] - hx[1:-1, :-1, :  ])
-
 
 class CurrentX(pyfdtd3d.base.Probe):
     def __init__(self, yee):
