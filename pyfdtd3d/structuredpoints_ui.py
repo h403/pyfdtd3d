@@ -5,17 +5,28 @@ from bokeh.plotting import figure
 from bokeh.models import LinearColorMapper
 import threading
 import abc
+import numpy as np
 
 class Solver(object):
+    def __init__(self, **kw):
+        self.parameters = {}
+        self.config(**kw)
+        self.yee = None
+        self.time = None
+    def config(self, **kw):
+        for k in kw:
+            self.parameters[k] = kw[k]
+    def reset(self):
+        self.prepare()
     def calculate(self):
         pass
-    def reset(self):
+    def prepare(self):
         pass
-        
+
 class ControlPanel(object):
-    def __init__(self, solver, plotter):
-        self._solver = solver
+    def __init__(self, plotter, solver):
         self._plotter = plotter
+        self._solver = solver
         #
         self.counter_int = widgets.IntText(value=0, description='Current Count:', disabled=True)
         self.counter_limit_int = widgets.IntText(value=1000, description='Count Limit:', disabled=False)
@@ -34,31 +45,41 @@ class ControlPanel(object):
         self.pause_button.on_click(self.pause)
         self.reset_button.on_click(self.reset)
         #
-        self._evt_pause = threading.Event()
-        self._evt_pause.clear()
+        self._evt_run = threading.Event()
+        self._evt_run.clear()
+        self._evt_break = threading.Event()
+        self._evt_break.clear()
         self._thread = threading.Thread(target=self.calc_thread)
         self._thread.start()
     def calc_thread(self):
-        while self.counter_int.value < self.counter_limit_int.value:
-            self._evt_pause.wait()
+        while True:
+            if not (self.counter_int.value < self.counter_limit_int.value):
+                self._evt_run.clear()
+            self._evt_run.wait()
             self.counter_int.value += 1
-            self.current_time.value = self._solver.timeSeries.current_time
+            self.current_time.value = self._solver.time.current_time
             self._solver.calculate()
             if not (self.counter_int.value % self.plot_every_int.value):
                 self._plotter.push()
     def calculate(self, e):
-        self._evt_pause.set()
+        self._evt_run.set()
     def pause(self, e):
-        self._evt_pause.clear()
+        self._evt_run.clear()
     def reset(self, e):
         self.pause(e)
         self.counter_int.value = 0
         self._solver.reset()
-        self.current_time.value = self._solver.timeSeries.current_time
+        self.current_time.value = self._solver.time.current_time
         self._plotter.yee = self._solver.yee
         self._plotter.push()
-        self.thread = threading.Thread(target=self.calc_thread)
-        self.thread.start()
+        #if self._thread.is_alive():
+        #    self._evt_break.set()
+        #    self.calculate(e)
+        #    self._thread.join()
+        #    self.pause(e)
+        #    self._evt_break.clear()
+        #self._thread = threading.Thread(target=self.calc_thread)
+        #self._thread.start()
         
 class Plotter(object):
     def __init__(self, yee, slices, mapper):
