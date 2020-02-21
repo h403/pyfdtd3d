@@ -31,5 +31,9 @@ def sin3(current_time,freq): # time: float, freq: float
         v = np.sin(omg0 * current_time) ** 3
     return v
 
+def sin(current_time,freq): # time: float, freq: float
+    omg0 = 2 * np.pi * freq # 正弦波源の各周波数
+    return np.sin(omg0 * current_time) ** 3
+
 def vsrc(voltage, current, delta, resister=50):
     return - (voltage - resister * current) / delta

@@ -24,16 +24,16 @@ class Solver(object):
         pass
 
 class ControlPanel(object):
-    def __init__(self, plotter, solver):
+    def __init__(self, plotter, solver, counter_limit=1001, plot_every=10):
         self._plotter = plotter
         self._solver = solver
         #
         self.counter_int = widgets.IntText(value=0, description='Current Count:', disabled=True)
-        self.counter_limit_int = widgets.IntText(value=1000, description='Count Limit:', disabled=False)
+        self.counter_limit_int = widgets.IntText(value=counter_limit, description='Count Limit:', disabled=False)
         display(widgets.HBox([self.counter_int, self.counter_limit_int]))
         #
-        self.current_time = widgets.FloatText(value=0, description='Current Time:', disabled=True)
-        self.plot_every_int = widgets.IntText(value=10, description='Plot Every:', disabled=False)
+        self.current_time = widgets.Text(value='0', description='Current Time:', disabled=True)
+        self.plot_every_int = widgets.IntText(value=plot_every, description='Plot Every:', disabled=False)
         display(widgets.HBox([self.current_time, self.plot_every_int]))
         #
         self.calc_button = widgets.Button(description='Calculate')
@@ -57,7 +57,7 @@ class ControlPanel(object):
                 self._evt_run.clear()
             self._evt_run.wait()
             self.counter_int.value += 1
-            self.current_time.value = self._solver.time.current_time
+            self.current_time.value = '{:8.7E}'.format(self._solver.time.current_time)
             self._solver.calculate()
             if not (self.counter_int.value % self.plot_every_int.value):
                 self._plotter.push()
@@ -69,17 +69,9 @@ class ControlPanel(object):
         self.pause(e)
         self.counter_int.value = 0
         self._solver.reset()
-        self.current_time.value = self._solver.time.current_time
+        self.current_time.value = '{:8.7E}'.format(self._solver.time.current_time)
         self._plotter.yee = self._solver.yee
         self._plotter.push()
-        #if self._thread.is_alive():
-        #    self._evt_break.set()
-        #    self.calculate(e)
-        #    self._thread.join()
-        #    self.pause(e)
-        #    self._evt_break.clear()
-        #self._thread = threading.Thread(target=self.calc_thread)
-        #self._thread.start()
         
 class Plotter(object):
     def __init__(self, yee, slices, mapper):
