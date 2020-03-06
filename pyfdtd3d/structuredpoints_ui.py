@@ -74,13 +74,13 @@ class ControlPanel(object):
         self._plotter.push()
         
 class Plotter(object):
-    def __init__(self, yee, slices, mapper):
+    def __init__(self, yee, slices, mapper, **kw):
         self.yee = y = yee
         self._slices = s = slices
         ex, ey, ez = y.e
         im = ez.__getitem__(s)
         output_notebook()
-        f = figure()
+        f = figure(**kw)
         self._render = f.image(image=[im], x=0, y=0, dw=10, dh=10, color_mapper=mapper)
         self._notebook_handle = show(f, notebook_handle=True)
     def push(self):

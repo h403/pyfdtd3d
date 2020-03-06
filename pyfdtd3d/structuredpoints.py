@@ -53,10 +53,17 @@ class Yee(object):
         self._efield = EField(*grid.dimensions)
         self._hfield = HField(*grid.dimensions)
         
-class Material(object):
+class MaterialLossless(object):
     er = property(lambda self: self._er)
     def __init__(self, nx, ny, nz):
         self._er = np.ones((nx, ny, nz))
+
+class Material(object):
+    er = property(lambda self: self._er)
+    sigma = property(lambda self: self._sigma)
+    def __init__(self, nx, ny, nz):
+        self._er = np.ones((nx, ny, nz))
+        self._sigma = np.zeros((nx, ny, nz))
 
 class HCalc(pyfdtd3d.base.Calculator):
     def __init__(self, yee, time):
@@ -75,7 +82,7 @@ class HCalc(pyfdtd3d.base.Calculator):
         hz[ :  , :  , :  ] -= cx * (ey[1:  , :  , :  ] - ey[ :-1, :  , :  ])\
                             - cy * (ex[ :  ,1:  , :  ] - ex[ :  , :-1, :  ])       
 
-class ECalc(pyfdtd3d.base.Calculator):
+class ECalcLossless(pyfdtd3d.base.Calculator):
     def __init__(self, yee, time, material):
         super().__init__()
         self._yee = y = yee
@@ -108,6 +115,55 @@ class ECalc(pyfdtd3d.base.Calculator):
         ez[1:-1,1:-1, :  ] += czx * (hy[1:  ,1:-1, :  ] - hy[ :-1,1:-1, :  ])\
                             - czy * (hx[1:-1,1:  , :  ] - hx[1:-1, :-1, :  ])
 
+class ECalc(pyfdtd3d.base.Calculator):
+    def __init__(self, yee, time, material):
+        super().__init__()
+        self._yee = y = yee
+        dt = time.dt
+        dx, dy, dz = y.grid.spacing
+        erx, ery, erz = ECalc.space_average(material.er)
+        sgx, sgy, sgz = ECalc.space_average(material.sigma)
+        e = np.array((erx, ery, erz))
+        s = np.array((sgx, sgy, sgz))
+        d = np.array((dx, dy, dz))
+        self._const_e = (1 - s * dt / 2 / EP0 / e) / (1 + s * dt / 2 / EP0 / e)
+        e = np.array((erx, erx, ery, ery, erz, erz))
+        s = np.array((sgx, sgx, sgy, sgy, sgz, sgz))
+        d = np.array((dy, dz, dz, dx, dx, dy))
+        self._const_h = (dt / EP0 / e) / (1 + s * dt / 2 / EP0 / e) / d
+    def calculate(self):
+        ex, ey, ez = self._yee.e
+        hx, hy, hz = self._yee.h
+        cx, cy, cz = self._const_e
+        cxy, cxz, cyz, cyx, czx, czy = self._const_h
+        ex[ :  ,1:-1,1:-1]\
+        = cx * ex[:, 1:-1, 1:-1]\
+        + cxy * (hz[ :  ,1:  ,1:-1] - hz[ :  , :-1,1:-1])\
+        - cxz * (hy[ :  ,1:-1,1:  ] - hy[ :  ,1:-1, :-1])
+        ey[1:-1, :  ,1:-1]\
+        = cy * ey[1:-1, :  ,1:-1]\
+        + cyz * (hx[1:-1, :  ,1:  ] - hx[1:-1, :  , :-1])\
+        - cyx * (hz[1:  , :  ,1:-1] - hz[ :-1, :  ,1:-1])
+        ez[1:-1,1:-1, :  ]\
+        = cz * ez[1:-1,1:-1, :  ]\
+        + czx * (hy[1:  ,1:-1, :  ] - hy[ :-1,1:-1, :  ])\
+        - czy * (hx[1:-1,1:  , :  ] - hx[1:-1, :-1, :  ])
+    @classmethod
+    def space_average(self, a):
+        ax = (a[ :  , :-1, :-1] +
+              a[ :  , :-1,1:  ] +
+              a[ :  ,1:  , :-1] +
+              a[ :  ,1:  ,1:  ]) / 4
+        ay = (a[ :-1, :  , :-1] +
+              a[1:  , :  , :-1] +
+              a[ :-1, :  ,1:  ] +
+              a[1:  , :  ,1:  ]) / 4
+        az = (a[ :-1, :-1, :  ] +
+              a[ :-1,1:  , :  ] +
+              a[1:  , :-1, :  ] +
+              a[1:  ,1:  , :  ]) / 4
+        return ax, ay, az
+    
 class CurrentX(pyfdtd3d.base.Probe):
     def __init__(self, yee):
         super().__init__()
